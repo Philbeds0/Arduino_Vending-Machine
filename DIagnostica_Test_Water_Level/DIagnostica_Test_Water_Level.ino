@@ -1,7 +1,7 @@
-/* Arduino Tutorial - Watel Level Sensor 40mm  
- *  Per quello del kit Elegoo MAX 367 di output
- *  Quindi: 80 = 1 cm e 320 = 4cm
-   More info: */
+/* Diagnostics Watel Level Sensor 40mm  
+ * kit Elegoo MAX 367 output
+ *  80 = 1 cm e 320 = 4cm
+ */
 
 const int read = A15; //Sensor AO pin to Arduino pin A0
 int value=0;          //Variable to store the incomming data
