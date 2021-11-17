@@ -1,53 +1,53 @@
-#define trigPin 8 //trigger ultrasuoni
-#define echoPin 9 //rilevatore ultrasuoni
-#define ledgiallo 10 //indica la distanza > di tot
-#define ledblu 11  //indica la distanza < di tot
-int quantopost = 5000;
-int quantopre = 5000;
-int quantogusto = 1500;
-int quantaacqua = 5500; //quanta acqua erogare 12000 = 500ml
-long durata, distanza;  //Per il calcolo della distanza e durata dell'ultrasuono
-byte bridgepompa = 7; //pin per il bridge del transistor che mi porterà i 12v
-byte bridgemotoregusto = 17;
-byte bridgemotorepre = 14;
-byte bridgemotorepost = 2;
-byte ledgenerali = 26;
+#define trigPin 8 //trigger ultrasounds
+#define echoPin 9 //receive ultrasounds
+#define yellowled 10 //led to tell that object distance is higher than tot
+#define blueled 11  //led to tell that object distance is lower than tot
+int howmuchpost = 5000;
+int howmuchpre = 5000;
+int howmuchflavor = 1500;
+int howmuchwater = 5500; //how much water 12000 = 500ml
+long howlongultrasound, ultrasound_distance;  //To calculate bottle distance from the tap
+byte pump_bridge = 7; //pump transistor's bridge pin (12v)
+byte bridge_flavormotor = 17;
+byte bridge_premotor = 14;
+byte bridge_postmotor = 2;
+byte general_led = 26;
 char watersensor = A15;
-unsigned long tempo_now;
-byte distaborraccia = 6;
-int realtimeacqua = 0;
-int altezzaacqua = 250;
+unsigned long time_now;
+byte bottle_distance = 6;
+int leaked_water = 0;
+int water_lvldanger = 250;
 
-//includo libreria per la comunicazione con device SPI
+//SPI communication device library
 #include <SPI.h>
-//includo libreria per la comunicazione RFID
+//RFID Library
 #include <RFID.h>
 
 
-//Pin 53 per
+//Pin 53 
 #define SS_PIN 53
-//Pin 5 al reset della scheda RFID
+//Pin 5 reset RFID
 #define RST_PIN 5
 
-// Codice della chiave per il post
+// Keycode to activate post workout beverage
 #define masnum0 55
 #define masnum1 241
 #define masnum2 222
 #define masnum3 121
 #define masnum4 97
 
-// Codice della chiave per il pre
+// Keycode to activate pre workout beverage
 #define prenum0 23
 #define prenum1 139
 #define prenum2 163
 #define prenum3 64
 #define prenum4 127
 
-#define ledGreen 13  // Pin su cui colleghiamo il LED Verde
-#define ledRed 12  // Pin su cui colleghiamo il LED Rosso
+#define ledGreen 13  
+#define ledRed 12  
 
-//Assegno schedarfid come RFID aventi pin 53 per ss e reset 7
-RFID schedarfid(SS_PIN, RST_PIN);
+//rfid_card pin 53 for  ss and reset 7
+RFID rfid_card(SS_PIN, RST_PIN);
 
 int sernum0;
 int sernum1;
@@ -68,117 +68,117 @@ void setup() {
   Serial.begin (9600);
   lcd.begin();
   lcd.backlight();
-  SPI.begin(); //Apro la comunicazione SPI
-  schedarfid.init();//inizializzo scheda rfid
+  SPI.begin(); //Open SPI communication
+  rfid_card.init();//Initialize RFID sensor
 
   pinMode(ledRed, OUTPUT);
   pinMode(ledGreen, OUTPUT);
 
   digitalWrite(ledGreen, LOW);
   lcd.setCursor(2, 0);
-  lcd.print("Ciao!");
+  lcd.print("Hi!");
   lcd.setCursor(2, 1);
-  lcd.print("Avvicina il tuo");
+  lcd.print("Place your smartphone");
   lcd.setCursor(2, 2);
-  lcd.print("smartphone o la");
+  lcd.print("or card near");
   lcd.setCursor(2, 3);
-  lcd.print("tessera");
-  Serial.print("Accensione led con RFID Pronto");
+  lcd.print("the logo");
+  Serial.print("switch on led and rfid ready");
 
 
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-  pinMode(ledgiallo, OUTPUT);
-  pinMode(ledblu, OUTPUT);
-  pinMode(bridgepompa, OUTPUT);
-  pinMode(bridgemotoregusto, OUTPUT);
-  pinMode(bridgemotorepost, OUTPUT);
-  pinMode(bridgemotorepre, OUTPUT);
-  pinMode(ledgenerali, OUTPUT);
+  pinMode(yellowled, OUTPUT);
+  pinMode(blueled, OUTPUT);
+  pinMode(pump_bridge, OUTPUT);
+  pinMode(bridge_flavormotor, OUTPUT);
+  pinMode(bridge_postmotor, OUTPUT);
+  pinMode(bridge_premotor, OUTPUT);
+  pinMode(general_led, OUTPUT);
   pinMode(watersensor, INPUT);
 
 }
 
 void loop() {
 
-  //###Iizio Firmware RFID###
-  realtimeacqua = analogRead(watersensor);
+  //###Start RFID Firmware ###
+  leaked_water = analogRead(watersensor);
 
-  if (realtimeacqua >= altezzaacqua) {
+  if (leaked_water >= water_lvldanger) {
     lcd.clear();
     lcd.setCursor(2, 1);
-    lcd.print("Vaschetta piena!");
+    lcd.print("Water level too high!");
 
-    while (realtimeacqua >= altezzaacqua) {
-      realtimeacqua = analogRead(watersensor);
-      Serial.println("Vaschetta piena");
-      Serial.println(realtimeacqua);
+    while (leaked_water >= water_lvldanger) {
+      leaked_water = analogRead(watersensor);
+      Serial.println("Water level too high!");
+      Serial.println(leaked_water);
 
     }
     lcd.clear();
     standby();
   }
 
-  // Rileva un tag...
-  if (schedarfid.isCard()) {
-    // Legge il seriale...
-    if (schedarfid.readCardSerial()) {
-      sernum0 = schedarfid.serNum[0];
-      sernum1 = schedarfid.serNum[1];
-      sernum2 = schedarfid.serNum[2];
-      sernum3 = schedarfid.serNum[3];
-      sernum4 = schedarfid.serNum[4];
+  // if a rfid tag is detected...
+  if (rfid_card.isCard()) {
+    // Read serial...
+    if (rfid_card.readCardSerial()) {
+      sernum0 = rfid_card.serNum[0];
+      sernum1 = rfid_card.serNum[1];
+      sernum2 = rfid_card.serNum[2];
+      sernum3 = rfid_card.serNum[3];
+      sernum4 = rfid_card.serNum[4];
 
-      // Se il seriale letto è uguale al seriale per il post
+      // If the read serial is equal to the post workout beverage keycard
       if (sernum0 == masnum0 && sernum1 == masnum1 && sernum2 == masnum2 && sernum3 == masnum3 && sernum4 == masnum4)
       {
-        //controlla se il led è spento e poi stampa il messaggio e accendi la luce verde, aspetta 3000 ms e poi spegnila
-        digitalWrite(ledgenerali, HIGH);
+        //check if led is switched off, then print a message and switch on green led  wait for 3000 ms and then switch it off
+        digitalWrite(general_led, HIGH);
         lcd.clear();
         lcd.setCursor(1, 0);
-        lcd.print("Ricaricati!");
+        lcd.print("Recharge yourself!");
         lcd.setCursor(1, 2);
-        lcd.print("Ecco la tua bevanda ");
+        lcd.print("Here's your post");
         lcd.setCursor(1, 3);
-        lcd.print("post allenamento");
-        Serial.println("CHIAVE VALIDA LED ACCESO");
+        lcd.print("workout beverage");
+        Serial.println("Valid key, led switched on");
         digitalWrite(ledGreen, HIGH);
         delay(3000);
         digitalWrite(ledGreen, LOW);
 
-        //###Inizio Firmware degli ultrasuoni###
+        //###Ultrasounds firmware on###
         if (loopon != 1) {
           lcd.clear();
           lcd.setCursor(3, 1);
-          lcd.print("Posiziona la");
+          lcd.print("Move your ");
           lcd.setCursor(3, 2);
-          lcd.print("tua borraccia");
+          lcd.print("bottle closer");
           while (loopon != 1) {
 
 
-            //Controllo la distanza
-            ultrasuoni();
+            //Check ultrasound_distance
+            ultrasound();
 
 
-            //se la distanza è minore di 4
-            if (distanza < distaborraccia) {
-              Serial.println("Rilevo qualcosa, aspetto 4 secondi e poi ricontrollo");
-              digitalWrite(ledblu, HIGH);
-              digitalWrite(ledgiallo, LOW);
+            //if ultrasound_distance is less than 4
+            if (ultrasound_distance < bottle_distance) {
+              Serial.println("Something has been detected, I'll wait for 4 seconds and I'll check again");
+              digitalWrite(blueled, HIGH);
+              digitalWrite(yellowled, LOW);
               delay(4000);
 
-              //Ricontrollo se la borraccia è ancora li
-              //Controllo la distanza
-              ultrasuoni();
-              //se la borraccia è ancora li
-              if (distanza < distaborraccia) {
-                digitalWrite(ledblu, LOW);
+              //Recheck if the bottle is still in position
+              // ultrasound_distance check
+              ultrasound();
+              //If the water bottle is still there
+              if (ultrasound_distance < bottle_distance) {
+                digitalWrite(blueled, LOW);
                 lcd.clear();
                 lcd.setCursor(0, 1);
-                lcd.print("Inizio a erogare");
+                lcd.print("Starting to dispense");
                 lcd.setCursor(0, 2);
-                lcd.print("il post allenamento");
-                Serial.println("OK, la borraccia è in posizione, inizio a erogare fra:");
+                lcd.print("your post workout beverage");
+                Serial.println("OK, water bottle is in position, starting in:");
                 Serial.print("3 ");
                 delay(500);
                 Serial.print("2 ");
@@ -187,105 +187,105 @@ void loop() {
                 delay(500);
                 Serial.println("GO");
 
-                //###Fine Firmware degli ultrasuoni###
+                //###End ultrasounds firmware###
 
 
-                //###Inizio Firmware motore proteine###
+                //###Start protein motor firmware###
 
-                //Controllo la distanza
-                ultrasuoni();
-
-
-                //controllo a quanti millis sono
-                tempo_now = millis();
+                //check ultrasound_distance
+                ultrasound();
 
 
+                //check millis 
+                time_now = millis();
 
 
-                //finché i millis attuali sono minori dei millis attuali+ il periodo che deve aspettare
-                while (distanza <= distaborraccia && millis() < tempo_now + quantogusto)
+
+
+                //while actual millis are less than actual millis + timeframe i have to wait
+                while (ultrasound_distance <= bottle_distance && millis() < time_now + howmuchflavor)
                 {
-                  //Controllo la distanza
-                  ultrasuoni();
-                  //apri transistor pompa
-                  digitalWrite(bridgepompa, HIGH);
-                  Serial.println("Erogo acqua");
-                  digitalWrite(bridgemotoregusto, HIGH);
-                  Serial.println("Erogo gusto");
+                  //Check ultrasound_distance
+                  ultrasound();
+                  //Open water pump transistor
+                  digitalWrite(pump_bridge, HIGH);
+                  Serial.println("Dispensing water");
+                  digitalWrite(bridge_flavormotor, HIGH);
+                  Serial.println("Dispensing flavor");
                 }
-                digitalWrite(bridgepompa, LOW);
-                digitalWrite(bridgemotoregusto, LOW);
+                digitalWrite(pump_bridge, LOW);
+                digitalWrite(bridge_flavormotor, LOW);
 
-                long unsigned tempo_now2 = millis();
+                long unsigned time_now2 = millis();
 
-                while (distanza <= distaborraccia && millis() < tempo_now2 + quantopost )
+                while (ultrasound_distance <= bottle_distance && millis() < time_now2 + howmuchpost )
                 {
-                  //Controllo la distanza
-                  ultrasuoni();
-                  //apri transistor pompa
-                  Serial.println("Erogo post");
-                  digitalWrite(bridgemotorepost, HIGH);
-                  Serial.println("Erogo acqua");
-                  digitalWrite(bridgepompa, HIGH);
+                  //Check ultrasound_distance
+                  ultrasound();
+                  //Open water punmp transistor
+                  Serial.println("Dispensing post");
+                  digitalWrite(bridge_postmotor, HIGH);
+                  Serial.println("Dispensing water");
+                  digitalWrite(pump_bridge, HIGH);
                 }
-                digitalWrite(bridgepompa, LOW);
-                digitalWrite(bridgemotorepost, LOW);
+                digitalWrite(pump_bridge, LOW);
+                digitalWrite(bridge_postmotor, LOW);
 
-                long unsigned tempo_now3 = millis();
+                long unsigned time_now3 = millis();
 
-                while (distanza <= distaborraccia && millis() < tempo_now3 + quantaacqua ) {
-                  //Controllo la distanza
-                  ultrasuoni();
-                  digitalWrite(bridgepompa, HIGH);
-                  Serial.println("Erogo acqua rimanente");
+                while (ultrasound_distance <= bottle_distance && millis() < time_now3 + howmuchwater ) {
+                  //Check ultrasound_distance
+                  ultrasound();
+                  digitalWrite(pump_bridge, HIGH);
+                  Serial.println("Dispensing water rimanente");
                 }
 
 
 
-                digitalWrite(bridgepompa, LOW);
+                digitalWrite(pump_bridge, LOW);
 
-                Serial.println("Finito di erogare acqua");
-                //chiudi transistor
+                Serial.println("Finito di erogare water");
+                //close transistor
 
-                loopon = 1; //Dico che ha erogato acqua così esce dal loop degli ultrasuoni
+                loopon = 1; //Water has been dispensed, by assigning 1 the firmware will exit from the ultrasounds loop
                 delay(2000);
                 lcd.clear();
                 lcd.setCursor(1, 1);
-                lcd.print("Ritira la bevanda");
-                ultrasuoni();
-                while (distanza <= distaborraccia) {
-                  ultrasuoni();
+                lcd.print("Your beverage is ready");
+                ultrasound();
+                while (ultrasound_distance <= bottle_distance) {
+                  ultrasound();
                 }
               }
 
             }
 
-            //###Fine Firmware della pompa acqua###
+            //###End water pump firmware###
 
-            //### Firmware di controllo degli ultrasuoni###
+            //### Ultrasounds control firmware###
 
 
-            //se la borraccia non è in posizione accendo led giallo
+            //If the water bottle is not in position anymore switch on yellow led
             else {
-              digitalWrite(ledblu, LOW);
-              digitalWrite(ledgiallo, HIGH);
+              digitalWrite(blueled, LOW);
+              digitalWrite(yellowled, HIGH);
             }
 
-            // se la distanza è fuori dal range dell'ultrasuono
-            if (distanza >= 200 || distanza <= 0) {
+            // If ultrasound_distance is outside from the ultrasound range
+            if (ultrasound_distance >= 200 || ultrasound_distance <= 0) {
               Serial.print("Troppo lontano:");
-              Serial.print(distanza);
+              Serial.print(ultrasound_distance);
               Serial.println(" cm");
             }
-            //se e dentro al range
+            //if it is inside the determined range
             else {
-              Serial.print(distanza);
+              Serial.print(ultrasound_distance);
               Serial.println(" cm");
             }
 
             delay(500);
 
-            //### Fine Firmware di controllo degli ultrasuoni###
+            //### End Ultrasounds control firmware###
 
 
 
@@ -294,34 +294,33 @@ void loop() {
         loopon = 0;
         delay(3000);
         lcd.clear();
-        Serial.println("Simulazione del post finita");
+        Serial.println("Ended simulation");
         lcd.setCursor(6, 1);
-        lcd.print("A presto");
+        lcd.print("bye");
         delay(2000);
-        digitalWrite(ledgenerali, LOW);
+        digitalWrite(general_led, LOW);
         standby();
 
       }
 
-      //###//Se invece il seriale letto è quello del pre###
+      //If the read serial is the pre workout one
       else if (sernum0 == prenum0 && sernum1 == prenum1 && sernum2 == prenum2 && sernum3 == prenum3 && sernum4 == prenum4)
       {
 
-        digitalWrite(ledgenerali, HIGH);
+        digitalWrite(general_led, HIGH);
 
-        //controlla se il led è spento e poi stampa il messaggio e accendi la luce verde, aspetta 3000 ms e poi spegnila
+        //check if led is switched off, then print a message and switch on green led  wait for 3000 ms and then switch it off
         lcd.clear();
         lcd.setCursor(2, 1);
-        lcd.print("Ciao Elisabetta!");
+        lcd.print("Hi Elizabeth!");
         lcd.setCursor(2, 2);
-        lcd.print("Buon allenamento");
-        Serial.println("CHIAVE VALIDA LED ACCESO");
+        lcd.print("Happy workout");
+        Serial.println("Valid key, led switched on");
         digitalWrite(ledGreen, HIGH);
         delay(3000);
         digitalWrite(ledGreen, LOW);
 
-        //###Inizio Firmware degli ultrasuoni###
-        //###Inizio Firmware degli ultrasuoni###
+        //###Starting ultrasounds firmware###
         if (loopon != 1) {
           lcd.clear();
           lcd.setCursor(3, 1);
@@ -330,28 +329,28 @@ void loop() {
           lcd.print("tua borraccia");
           while (loopon != 1) {
 
-            //Controllo la distanza
-            ultrasuoni();
+            //Check ultrasound_distance
+            ultrasound();
 
-            //se la distanza è minore di 4
-            if (distanza < distaborraccia) {
-              Serial.println("Rilevo qualcosa, aspetto 4 secondi e poi ricontrollo");
-              digitalWrite(ledblu, HIGH);
-              digitalWrite(ledgiallo, LOW);
+            //If ultrasound_distance is less than 4
+            if (ultrasound_distance < bottle_distance) {
+              Serial.println("I detected something, I'll wait and then I'll check again");
+              digitalWrite(blueled, HIGH);
+              digitalWrite(yellowled, LOW);
               delay(4000);
 
-              //Ricontrollo se la borraccia è ancora li
-              ultrasuoni();
+              //Check if the water bottle is still there
+              ultrasound();
 
-              //se la borraccia è ancora li
-              if (distanza < distaborraccia) {
-                digitalWrite(ledblu, LOW);
+              //If the water bottle is still there
+              if (ultrasound_distance < bottle_distance) {
+                digitalWrite(blueled, LOW);
                 lcd.clear();
                 lcd.setCursor(1, 1);
-                lcd.print("Inizio a erogare");
+                lcd.print("Starting to dispense");
                 lcd.setCursor(1, 2);
-                lcd.print("il pre allenamento");
-                Serial.println("OK, la borraccia è in posizione, inizio a erogare fra:");
+                lcd.print("your pre workout beverage");
+                Serial.println("OK, water bottle in position, starting in:");
                 Serial.print("3 ");
                 delay(500);
                 Serial.print("2 ");
@@ -360,103 +359,103 @@ void loop() {
                 delay(500);
                 Serial.println("GO");
 
-                //###Fine Firmware degli ultrasuoni###
+                //###End ultrasounds firmware###
 
 
-                //###Inizio Firmware motore proteine###
-                ultrasuoni();
+                //###Starting protein motor firmware###
+                ultrasound();
 
 
-                //controllo a quanti millis sono
-                tempo_now = millis();
+                //check millis
+                time_now = millis();
 
 
 
 
-                //finché i millis attuali sono minori dei millis attuali+ il periodo che deve aspettare
-                while (distanza <= distaborraccia && millis() < tempo_now + quantogusto)
+                //while actual millis are less than actual millis + timeframe i have to wait
+                while (ultrasound_distance <= bottle_distance && millis() < time_now + howmuchflavor)
                 {
-                  ultrasuoni();
-                  Serial.println(distanza);
-                  //apri transistor pompa
-                  digitalWrite(bridgepompa, HIGH);
-                  Serial.println("Erogo acqua");
-                  digitalWrite(bridgemotoregusto, HIGH);
-                  Serial.println("Erogo gusto");
+                  ultrasound();
+                  Serial.println(ultrasound_distance);
+                  //Open water punmp transistor
+                  digitalWrite(pump_bridge, HIGH);
+                  Serial.println("Dispensing water");
+                  digitalWrite(bridge_flavormotor, HIGH);
+                  Serial.println("Dispensing flavor");
                 }
-                digitalWrite(bridgepompa, LOW);
-                digitalWrite(bridgemotoregusto, LOW);
+                digitalWrite(pump_bridge, LOW);
+                digitalWrite(bridge_flavormotor, LOW);
 
-                long unsigned tempo_now2 = millis();
+                long unsigned time_now2 = millis();
 
-                while (distanza <= distaborraccia && millis() < tempo_now2 + quantopost )
+                while (ultrasound_distance <= bottle_distance && millis() < time_now2 + howmuchpost )
                 {
-                  ultrasuoni();
-                  Serial.println(distanza);
-                  //apri transistor pompa
-                  Serial.println("Erogo post");
-                  digitalWrite(bridgemotorepre, HIGH);
-                  Serial.println("Erogo acqua");
-                  digitalWrite(bridgepompa, HIGH);
+                  ultrasound();
+                  Serial.println(ultrasound_distance);
+                  //Open water punmp transistor
+                  Serial.println("Dispensing post");
+                  digitalWrite(bridge_premotor, HIGH);
+                  Serial.println("Dispensing water");
+                  digitalWrite(pump_bridge, HIGH);
                 }
-                digitalWrite(bridgepompa, LOW);
-                digitalWrite(bridgemotorepre, LOW);
+                digitalWrite(pump_bridge, LOW);
+                digitalWrite(bridge_premotor, LOW);
 
-                long unsigned tempo_now3 = millis();
+                long unsigned time_now3 = millis();
 
-                while (distanza <= distaborraccia && millis() < tempo_now3 + quantaacqua ) {
-                  ultrasuoni();
-                  Serial.println(distanza);
-                  digitalWrite(bridgepompa, HIGH);
-                  Serial.println("Erogo acqua rimanente");
+                while (ultrasound_distance <= bottle_distance && millis() < time_now3 + howmuchwater ) {
+                  ultrasound();
+                  Serial.println(ultrasound_distance);
+                  digitalWrite(pump_bridge, HIGH);
+                  Serial.println("Dispensing remaining water");
                 }
 
 
 
-                digitalWrite(bridgepompa, LOW);
-                Serial.println("Finito di erogare acqua");
-                //chiudi transistor
+                digitalWrite(pump_bridge, LOW);
+                Serial.println("Finished dispensing water");
+                //close transistor
 
-                loopon = 1; //Dico che ha erogato acqua così esce dal loop degli ultrasuoni
+                loopon = 1; //water has been dispensed, exit from the loop
                 delay(2000);
 
                 lcd.clear();
                 lcd.setCursor(1, 1);
-                lcd.print("Ritira la bevanda");
-                ultrasuoni();
-                while (distanza <= distaborraccia) {
-                  ultrasuoni();
+                lcd.print("Your beverage is ready");
+                ultrasound();
+                while (ultrasound_distance <= bottle_distance) {
+                  ultrasound();
                 }
               }
 
             }
 
-            //###Fine Firmware della pompa acqua###
+            //###End water pump firmware###
 
-            //### Firmware di controllo degli ultrasuoni###
+            //### Ultrasounds control firmware###
 
 
-            //se la borraccia non è in posizione accendo led giallo
+            //If the water bottle is not in position anymore switch on yellow led
             else {
-              digitalWrite(ledblu, LOW);
-              digitalWrite(ledgiallo, HIGH);
+              digitalWrite(blueled, LOW);
+              digitalWrite(yellowled, HIGH);
             }
 
-            // se la distanza è fuori dal range dell'ultrasuono
-            if (distanza >= 200 || distanza <= 0) {
-              Serial.print("Troppo lontano:");
-              Serial.print(distanza);
+            // If ultrasound_distance is outside range
+            if (ultrasound_distance >= 200 || ultrasound_distance <= 0) {
+              Serial.print("Too far:");
+              Serial.print(ultrasound_distance);
               Serial.println(" cm");
             }
-            //se e dentro al range
+            //if it is inside range
             else {
-              Serial.print(distanza);
+              Serial.print(ultrasound_distance);
               Serial.println(" cm");
             }
 
             delay(500);
 
-            //### Fine Firmware di controllo degli ultrasuoni###
+            //### end Ultrasounds control firmware###
 
 
 
@@ -465,11 +464,11 @@ void loop() {
         loopon = 0;
         delay(3000);
         lcd.clear();
-        Serial.println("Simulazione del pre finita");
+        Serial.println("preworkout simualtion ended");
         lcd.setCursor(6, 1);
-        lcd.print("A presto");
+        lcd.print("Bye");
         delay(2000);
-        digitalWrite(ledgenerali, LOW);
+        digitalWrite(general_led, LOW);
         standby();
 
 
@@ -478,14 +477,14 @@ void loop() {
       else {
         lcd.clear();
         lcd.setCursor(2, 1);
-        lcd.print("Abbonamento ");
+        lcd.print("Subscription ");
         lcd.setCursor(2, 2);
-        lcd.print("non riconosciuto");
-        Serial.println("Chiave non valida, accendo led rosso");
+        lcd.print("not recognized");
+        Serial.println("Invalid key, red led switched on");
         digitalWrite(ledRed, HIGH);
         delay(3000);
         digitalWrite(ledRed, LOW);
-        digitalWrite(ledgenerali, LOW);
+        digitalWrite(general_led, LOW);
         standby();
 
       }
@@ -497,25 +496,25 @@ void loop() {
 
 void standby() {
   lcd.setCursor(2, 0);
-  lcd.print("Ciao!");
+  lcd.print("Hi!");
   lcd.setCursor(2, 1);
-  lcd.print("Avvicina il tuo");
+  lcd.print("Move your smartphone");
   lcd.setCursor(2, 2);
-  lcd.print("smartphone o la");
+  lcd.print("near the ");
   lcd.setCursor(2, 3);
-  lcd.print("tessera");
-  Serial.print("Accensione led con RFID Pronto");
+  lcd.print("logo");
+  Serial.print("Switched on led, rfid ready");
   //###Fine Firmware RFID###
 }
 
-void ultrasuoni() {
+void ultrasound() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
-  durata = pulseIn(echoPin, HIGH);
-  distanza = (durata / 2) / 29.1;
+  howlongltrasound = pulseIn(echoPin, HIGH);
+  ultrasound_distance = (howlongltrasound / 2) / 29.1;
 
 
 }
